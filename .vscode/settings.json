@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "stdio.h": "c",
+        "stdlib.h": "c",
+        "process.h": "c",
+        "winsock2.h": "c",
+        "windows.h": "c",
+        "ws2tcpip.h": "c",
+        "string.h": "c",
+        "time.h": "c",
+        "conio.h": "c"
+    }
+}
