@@ -1,1 +1,2 @@
-build/main.o: src/main.cpp include/lockFreeQueue.hpp
+build/main.o: src/main.cpp include/SimpleServer.h include/util.h \
+ include/SimpleClient.h
