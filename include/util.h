@@ -6,6 +6,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include "SimpleServer.h"
+#include <errno.h>     // errno, EAGAIN, EINTR
+#include <fcntl.h>
+
 // 辅助函数（根据你的代码推测）
 void die(const char *msg) ;
 

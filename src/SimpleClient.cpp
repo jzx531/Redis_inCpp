@@ -1,7 +1,7 @@
 #include "SimpleClient.h"
 
 const size_t k_max_msg =  4096;
-static int errno;
+// static int errno;
 static int32_t query(int fd,  const char *text)  {
     uint32_t len =  (uint32_t)strlen(text);
     if  (len >  k_max_msg)  {

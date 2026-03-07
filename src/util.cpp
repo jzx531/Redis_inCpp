@@ -45,7 +45,7 @@ void fd_set_nb(int fd)  {
         return ;
     }
 
-    flags | =  O_NONBLOCK;
+    flags |=  O_NONBLOCK;
 
     errno =  0;
     (void)fcntl(fd,  F_SETFL,  flags);

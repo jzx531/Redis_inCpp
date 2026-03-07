@@ -22,7 +22,7 @@ static void SimpleServer_do_something(int connfd)  {
 }
 
 const size_t k_max_msg =  4096;
-static int errno;
+// static int errno;
 
 static int32_t SimpleServer_one_request(int connfd)  {
     //  4字节的头部
