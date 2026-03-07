@@ -1,6 +1,7 @@
 #include "RedisServer.h"
 #include "Command.h"
 #include "util.h"
+#include "HashCommand.h"
 
 #include <vector>
 #include <cstdint>
@@ -278,12 +279,23 @@ static int32_t deal_req(
         return -1;
     }
 
+    
+    // 在解析 cmd 后清理
+    for (auto &s : cmd) {
+        while (!s.empty() && (s.back() == '\r' || s.back() == '\n')) {
+            s.pop_back();
+        }
+    }
+    
     if (cmd.size() == 2 && cmd_is(cmd[0], "get")) {
-        *rescode = do_get(cmd, res, reslen);
+        // *rescode = do_get(cmd, res, reslen);
+        *rescode = do_HashMap_get(cmd, res, reslen);
     } else if (cmd.size() == 3 && cmd_is(cmd[0], "set")) {
-        *rescode = do_set(cmd, res, reslen);
+        // *rescode = do_set(cmd, res, reslen);
+        *rescode = do_HashMap_set(cmd, res, reslen);
     } else if (cmd.size() == 2 && cmd_is(cmd[0], "del")) {
-        *rescode = do_del(cmd, res, reslen);
+        // *rescode = do_del(cmd, res, reslen);
+        *rescode = do_HashMap_del(cmd, res, reslen);
     } else {
         // 不识别的命令
         *rescode = RES_ERR;

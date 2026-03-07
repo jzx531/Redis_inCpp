@@ -1,5 +1,6 @@
 #include "PollServer.h"
 #include "util.h"
+#include "HashCommand.h"
 
 #include <cstdio>      // printf, perror (对应 msg/die 宏可能用到的)
 #include <cstdlib>     // malloc, free, exit (对应 die 宏)
