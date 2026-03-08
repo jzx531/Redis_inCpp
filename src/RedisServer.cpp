@@ -286,8 +286,9 @@ static int32_t deal_req(
             s.pop_back();
         }
     }
-    
-    if (cmd.size() == 2 && cmd_is(cmd[0], "get")) {
+    if (cmd.size() == 1 && cmd_is(cmd[0], "keys")) 
+        *rescode =do_HashMap_keys(cmd,  res, reslen);
+    else if (cmd.size() == 2 && cmd_is(cmd[0], "get")) {
         // *rescode = do_get(cmd, res, reslen);
         *rescode = do_HashMap_get(cmd, res, reslen);
     } else if (cmd.size() == 3 && cmd_is(cmd[0], "set")) {

@@ -61,11 +61,29 @@ static int32_t read_res(int fd)  {
         msg("bad response");
         return -1;
     }
-    read_full(fd, rbuf + 4, len); // 跳过状态码
+    read_full(fd, rbuf + 4, len); 
     memcpy(&rescode, &rbuf[4], 4);
-    
-    printf("server says: [%u] %.*s\n", rescode, len - 4, &rbuf[8]);
-
+    if(rescode !=3){
+        printf("server says: [%u] %.*s\n", rescode, len - 4, &rbuf[8]);
+    }
+    else{
+        printf("server says: [%u]\n", rescode);
+        uint32_t data_len = len - 4;
+        uint32_t offset = 8;
+        while(data_len > (offset-8)){
+            uint32_t key_len = 0;
+            memcpy(&key_len, &rbuf[offset], 4);
+            offset += 4;
+            if(data_len < (offset-8+key_len)){
+                printf("bad response");
+            }else{
+                printf("key_len: %u", key_len);
+                printf(" key: %.*s", key_len, &rbuf[offset]);
+                offset += key_len;
+            }
+            printf("\n");
+        }
+    }
     /*
     // 2. 读取剩余部分 (状态码 + 数据)
     // 已经读了4字节，还需要读 len 字节

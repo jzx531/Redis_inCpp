@@ -119,3 +119,51 @@ uint32_t do_HashMap_del(
 }
 
 
+static void h_scan(HTab * tab,void(*f)(HNode*,void*),void* arg){
+    if(tab->size == 0){
+        return;
+    }
+    for(size_t i = 0; i <= tab->mask; i++){
+        HNode *cur = tab->tab[i];
+        while(cur){
+            f(cur, arg);
+            cur = cur->next;
+        }
+    }
+}
+
+static void out_str(std::string &out, const std::string &val)  {
+    // out.push_back(SER_STR);
+    uint32_t len = (uint32_t)val.size();
+    out.append((char *)&len, 4);
+    out.append(val);
+}
+
+static void cb_scan(HNode *node, void *arg){
+    std::string &out = *(std::string *)arg;
+    out_str(out, container_of(node, Entry, node)->key);
+}
+
+uint32_t do_HashMap_keys(
+    std::vector<std::string>  &cmd, uint8_t * res, uint32_t * reslen)
+{
+    (void)cmd;
+    // 1. 执行扫描
+    // 建议先检查 db 是否初始化
+    if (g_data.db.ht1.size == 0 && g_data.db.ht2.size == 0) {
+        *reslen = 0;
+        return RES_OK; // 空列表也是成功
+    }
+    std::string out;
+    out.reserve(k_max_msg);
+    h_scan(&g_data.db.ht1, &cb_scan, &out);
+    h_scan(&g_data.db.ht2, &cb_scan, &out);
+
+    memcpy(res, out.data(), out.size());
+    *reslen = (uint32_t)out.size();
+    // printf("DEBUG: Keys scan finished. Found %zu bytes.\n", out.size());
+    // for(char c : out){
+    //     printf("%02x \n", (unsigned char)c);
+    // }
+    return SER_STR;
+}
