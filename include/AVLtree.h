@@ -15,7 +15,32 @@ struct AVLNode {
 };
 
 
+struct Data {
+    AVLNode node;
+    uint32_t val = 0;
+};
 
+struct Container {
+    AVLNode * root = NULL;
+};
+
+void avl_init(AVLNode* node);
+
+uint32_t avl_depth(AVLNode * node);
+
+uint32_t avl_cnt(AVLNode * node);
+
+uint32_t max(uint32_t lhs, uint32_t rhs);
+
+AVLNode * avl_fix(AVLNode * node);
+
+AVLNode * avl_del(AVLNode *node);
+
+void add(Container &c,uint32_t val);
+
+bool del(Container &c, uint32_t val);
+
+AVLNode *avl_offset(AVLNode *node,  int64_t offset);
 
 #endif // AVLTREE_H
 

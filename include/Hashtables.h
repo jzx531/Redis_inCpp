@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+
 // 哈希表节点，应该嵌入到有效载荷中
 struct HNode {
     HNode *next = NULL;
@@ -48,6 +49,7 @@ void hm_insert(HMap *hmap, HNode *node);
 HNode *hm_pop(
     HMap *hmap, HNode * key, bool (*cmp)(HNode *, HNode *));
     
+void hm_clear(HMap *hmap);
 
 #endif // HASHTABLES_H
 

@@ -2,6 +2,7 @@
 #include "Command.h"
 #include "util.h"
 #include "HashCommand.h"
+#include "ZSetCommand.h"
 
 #include <vector>
 #include <cstdint>
@@ -287,17 +288,32 @@ static int32_t deal_req(
         }
     }
     if (cmd.size() == 1 && cmd_is(cmd[0], "keys")) 
-        *rescode =do_HashMap_keys(cmd,  res, reslen);
+        // *rescode =do_HashMap_keys(cmd,  res, reslen);
+        *rescode = do_ZSet_keys(cmd, res, reslen);
     else if (cmd.size() == 2 && cmd_is(cmd[0], "get")) {
         // *rescode = do_get(cmd, res, reslen);
-        *rescode = do_HashMap_get(cmd, res, reslen);
+        // *rescode = do_HashMap_get(cmd, res, reslen);
+        *rescode = do_ZSet_get(cmd, res, reslen);
     } else if (cmd.size() == 3 && cmd_is(cmd[0], "set")) {
         // *rescode = do_set(cmd, res, reslen);
-        *rescode = do_HashMap_set(cmd, res, reslen);
+        // *rescode = do_HashMap_set(cmd, res, reslen);
+        *rescode = do_ZSet_set(cmd, res, reslen);
     } else if (cmd.size() == 2 && cmd_is(cmd[0], "del")) {
         // *rescode = do_del(cmd, res, reslen);
-        *rescode = do_HashMap_del(cmd, res, reslen);
-    } else {
+        // *rescode = do_HashMap_del(cmd, res, reslen);
+        *rescode = do_ZSet_del(cmd, res, reslen);
+    } 
+    else if (cmd.size() == 4 && cmd[0] == "zadd") {
+        *rescode = do_zadd(cmd, res, reslen);
+    } else if (cmd.size() == 3 && cmd[0] == "zrem") {
+        *rescode =  do_zrem(cmd, res, reslen);
+    } else if (cmd.size() == 3 && cmd[0] == "zscore") {
+        *rescode = do_zscore(cmd, res, reslen);
+    } else if (cmd.size() == 6 && cmd[0] == "zquery") {
+        *rescode = do_zquery(cmd, res, reslen);
+    }
+    
+    else {
         // 不识别的命令
         *rescode = RES_ERR;
         const char *msg = "Unknown cmd";

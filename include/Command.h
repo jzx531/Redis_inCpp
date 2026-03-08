@@ -24,7 +24,9 @@
 +-----+---------+
 响应：32位的状态码，后面跟着响应字符串
 */
-
+#define container_of(ptr, type, member)  ({                                         \
+    const __typeof__(  ((type *)0)->member )  *     mptr =  (ptr);        \
+    (type *)(  (char *)      mptr -  offsetof(type, member)  );})
 
 enum {
     RES_OK = 0,

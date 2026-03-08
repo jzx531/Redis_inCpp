@@ -10,11 +10,8 @@ const size_t k_max_msg = 4096;
     将指针转为字节指针确保计算准确性
     offsetof(type, member)  计算出member在type结构体中的偏移量，以字节为单位。
 */
-#define container_of(ptr, type, member)  ({                                         \
-    const __typeof__(  ((type *)0)->member )  *     mptr =  (ptr);        \
-    (type *)(  (char *)      mptr -  offsetof(type, member)  );})
 
-static bool entry_eq(HNode *lhs, HNode *rhs) {
+bool entry_eq(HNode *lhs, HNode *rhs) {
     struct Entry *le = container_of(lhs, struct Entry, node);
     struct Entry *re = container_of(rhs, struct Entry, node);
     
@@ -22,16 +19,16 @@ static bool entry_eq(HNode *lhs, HNode *rhs) {
     bool key_match = (le->key == re->key);
     
     // 临时调试输出
-    if (!code_match || !key_match) {
-        fprintf(stderr, "DEBUG: Match Failed!\n");
-        fprintf(stderr, "  LHS Hash: %u, RHS Hash: %u\n", (unsigned)lhs->hcode, (unsigned)rhs->hcode);
-        fprintf(stderr, "  LHS Key: '%s' (len=%zu)\n", le->key.c_str(), le->key.size());
-        fprintf(stderr, "  RHS Key: '%s' (len=%zu)\n", re->key.c_str(), re->key.size());
-        // 打印十六进制查看是否有隐藏字符
-        fprintf(stderr, "  RHS Key Hex: ");
-        for(char c : re->key) fprintf(stderr, "%02x ", (unsigned char)c);
-        fprintf(stderr, "\n");
-    }
+    // if (!code_match || !key_match) {
+    //     fprintf(stderr, "DEBUG: Match Failed!\n");
+    //     fprintf(stderr, "  LHS Hash: %u, RHS Hash: %u\n", (unsigned)lhs->hcode, (unsigned)rhs->hcode);
+    //     fprintf(stderr, "  LHS Key: '%s' (len=%zu)\n", le->key.c_str(), le->key.size());
+    //     fprintf(stderr, "  RHS Key: '%s' (len=%zu)\n", re->key.c_str(), re->key.size());
+    //     // 打印十六进制查看是否有隐藏字符
+    //     fprintf(stderr, "  RHS Key Hex: ");
+    //     for(char c : re->key) fprintf(stderr, "%02x ", (unsigned char)c);
+    //     fprintf(stderr, "\n");
+    // }
     
     return code_match && key_match;
 }
@@ -119,7 +116,7 @@ uint32_t do_HashMap_del(
 }
 
 
-static void h_scan(HTab * tab,void(*f)(HNode*,void*),void* arg){
+void h_scan(HTab * tab,void(*f)(HNode*,void*),void* arg){
     if(tab->size == 0){
         return;
     }
@@ -161,9 +158,6 @@ uint32_t do_HashMap_keys(
 
     memcpy(res, out.data(), out.size());
     *reslen = (uint32_t)out.size();
-    // printf("DEBUG: Keys scan finished. Found %zu bytes.\n", out.size());
-    // for(char c : out){
-    //     printf("%02x \n", (unsigned char)c);
-    // }
+
     return SER_STR;
 }

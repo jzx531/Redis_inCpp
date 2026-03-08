@@ -136,6 +136,13 @@ HNode *hm_pop(
         return NULL;
     }
 
+void hm_clear(HMap *hmap) {
+    free(hmap->ht1.tab);
+    free(hmap->ht2.tab);
+    *hmap = HMap{};
+}
+        
+
 
 
 
