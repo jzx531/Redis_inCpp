@@ -63,10 +63,10 @@ static int32_t read_res(int fd)  {
     }
     read_full(fd, rbuf + 4, len); 
     memcpy(&rescode, &rbuf[4], 4);
-    if(rescode !=3){
+    if(rescode < 3){
         printf("server says: [%u] %.*s\n", rescode, len - 4, &rbuf[8]);
     }
-    else{
+    else if(rescode == 3){
         printf("server says: [%u]\n", rescode);
         uint32_t data_len = len - 4;
         uint32_t offset = 8;
@@ -81,6 +81,36 @@ static int32_t read_res(int fd)  {
                 printf(" key: %.*s", key_len, &rbuf[offset]);
                 offset += key_len;
             }
+            printf("\n");
+        }
+    }else{
+        printf("received %u bytes\n", len);
+        printf("server says: [%u]\n", rescode);
+        uint32_t data_len = len - 4;
+        uint32_t offset = 8;
+        while(data_len > (offset-8)){
+            uint32_t key_len = 0;
+            memcpy(&key_len, &rbuf[offset], 4);
+            offset += 4;
+            if(data_len < (offset-8+key_len)){
+                printf("bad response\n");
+                break;
+            }else{
+                printf("name_len: %u", key_len);
+                printf(" name: %.*s", key_len, &rbuf[offset]);
+                offset += key_len;
+            }
+            printf("\n");
+            memcpy(&key_len, &rbuf[offset], 4);
+            offset += 4;
+            if(data_len < (offset-8+key_len)){
+                printf("bad response\n");
+            }else{
+                printf("score_len: %u", key_len);
+                printf(" score: %.*s", key_len, &rbuf[offset]);
+                offset += key_len;
+            }
+
             printf("\n");
         }
     }

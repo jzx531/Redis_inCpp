@@ -32,7 +32,8 @@ enum {
     RES_OK = 0,
     RES_ERR = 1,
     RES_NX = 2,
-    SER_STR = 3
+    SER_STR = 3,
+    ZQUERY_RES = 4
 };
 
 uint32_t do_get(

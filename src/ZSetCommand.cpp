@@ -284,12 +284,23 @@ uint32_t do_zquery(
     int64_t n=0;
     std::string out;
     while(znode && limit > n){
-        out_str(out, znode->name);
+        // printf("%s %f\n", znode->name, znode->len);
+        std::string name_str ;
+        name_str.append(znode->name, znode->len);
+        out_str(out, name_str);
         // printf("%s", znode->name[0]);
-        out_str(out,std::to_string(znode->score));
+        std::string score_str = std::to_string(znode->score);
+        out_str(out,score_str);
         znode = znode_offset(znode, 1);
         n+=2;
     }
-    return RES_OK;   
+    memcpy(res, out.data(), out.size());
+    *reslen = (uint32_t)out.size();
+
+    // for(auto c : out){
+    //     printf("%c", c);
+    // }
+    // printf("%d\n", *reslen);
+    return ZQUERY_RES;   
 }
 
