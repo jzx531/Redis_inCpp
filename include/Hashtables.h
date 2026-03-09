@@ -38,7 +38,7 @@ struct Entry {
 };
 
 // 键空间的数据结构。
-static struct {
+extern struct GlobalData{
     HMap db;
 
     // 所有客户端连接的映射，以文件描述符（fd）为键

@@ -415,7 +415,7 @@ static void conn_done(Conn *conn)  {
 }
 
 //处理定时器
-void process_timers()  {
+void process_timers(int epoll_fd)  {
     uint64_t now_us =  get_monotonic_usec();
     while  (!dlist_empty(&g_data.idle_list))  {
         Conn *next =  container_of(g_data.idle_list.next,  Conn,  idle_list);
@@ -426,7 +426,7 @@ void process_timers()  {
         }
 
         printf("removing idle connection: %d\n",  next->fd);
-        conn_done(next);
+        close_conn(epoll_fd, next);
     }
 }
 
@@ -556,7 +556,7 @@ void RedisServer() {
         }
 
         //处理定时器
-        process_timers();
+        process_timers(epollfd);
     }
 }
 
