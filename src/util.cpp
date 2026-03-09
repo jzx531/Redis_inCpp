@@ -1,5 +1,10 @@
 #include "util.h"
 
+#include "HashCommand.h"
+#include "Hashtables.h"
+#include "RedisServer.h"
+#include "Command.h"    
+
 // 辅助函数（根据你的代码推测）
 void die(const char *msg) {
     perror(msg);
@@ -53,3 +58,12 @@ void fd_set_nb(int fd)  {
         die("fcntl error");
     }
 }
+
+uint64_t get_monotonic_usec()  {
+    timespec tv =  {0,  0};
+    clock_gettime(CLOCK_MONOTONIC,  &tv);
+    return  uint64_t(tv.tv_sec)  *  1000000 +  tv.tv_nsec /  1000;
+}
+
+
+

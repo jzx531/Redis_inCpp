@@ -21,7 +21,7 @@ static void SimpleServer_do_something(int connfd)  {
     write(connfd,  wbuf,  strlen(wbuf));
 }
 
-const size_t k_max_msg =  4096;
+// const size_t k_max_msg =  4096;
 // static int errno;
 
 static int32_t SimpleServer_one_request(int connfd)  {

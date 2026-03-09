@@ -12,30 +12,7 @@
 #include <algorithm>
 #include <cctype> // for tolower
 #include <cstring> // for strlen
-
-const size_t k_max_msg =  4096;
-const size_t k_max_args = 10;
-// --- 连接状态定义 ---
-enum {
-    STATE_REQ = 0,  // 等待读取请求
-    STATE_RES = 1,  // 等待写入响应
-    STATE_END = 2   // 连接关闭
-};
-
-// --- 连接结构体 ---
-struct Conn {
-    int fd = -1;
-    uint32_t state = STATE_REQ;
-    
-    // 读缓冲区
-    size_t rbuf_size = 0;
-    uint8_t rbuf[4 + k_max_msg];
-    
-    // 写缓冲区
-    size_t wbuf_size = 0;
-    size_t wbuf_sent = 0;
-    uint8_t wbuf[4 + k_max_msg];
-};
+#include "DList.h"
 
 // --- 全局连接管理 (fd -> Conn*) ---
 // 生产环境建议使用 hash map，这里为了简单沿用 vector
@@ -76,6 +53,10 @@ static void accept_new_conn(int lfd, int epollfd) {
         conn->rbuf_size = 0;
         conn->wbuf_size = 0;
         conn->wbuf_sent = 0;
+
+        //定时器在accept_new_conn中初始化
+        conn->idle_start =  get_monotonic_usec();
+        dlist_insert_before(&g_data.idle_list,  &conn->idle_list);
 
         conn_put(connfd, conn);
 
@@ -206,6 +187,7 @@ static void close_conn(int epollfd, Conn* conn) {
         if ((size_t)conn->fd < fd2conn.size()) {
             fd2conn[conn->fd] = nullptr;
         }
+        dlist_detach(&conn->idle_list);
         delete conn;
         printf("Connection closed\n");
     }
@@ -407,9 +389,65 @@ static bool process_request(Conn* conn,int epollfd) {
     return true;
 }
 
+uint32_t next_timer_ms(){
+    if(dlist_empty(&g_data.idle_list)){
+        return 10000;
+    }
+    uint64_t now_us = get_monotonic_usec();
+    
+    Conn *next = container_of(g_data.idle_list.next,  Conn,  idle_list);
+
+    uint64_t next_us =  next->idle_start +   k_idle_timeout_ms *   1000;
+    // printf("next_us is %lld\n", next_us);
+    if  (next_us <=  now_us)  {
+        // 超时了？
+        return  0;
+    }
+    return  uint32_t((next_us -  now_us)  /  1000);
+
+}
+
+static void conn_done(Conn *conn)  {
+    g_data.fd2conn[conn->fd]  =  NULL;
+    (void)close(conn->fd);
+    dlist_detach(&conn->idle_list);
+    free(conn);
+}
+
+//处理定时器
+void process_timers()  {
+    uint64_t now_us =  get_monotonic_usec();
+    while  (!dlist_empty(&g_data.idle_list))  {
+        Conn *next =  container_of(g_data.idle_list.next,  Conn,  idle_list);
+        uint64_t next_us =  next->idle_start +   k_idle_timeout_ms *   1000;
+        if  (next_us >=  now_us +  1000)  {
+            // 还没到时间，额外加1000微秒是考虑到poll()的毫秒精度
+            break;
+        }
+
+        printf("removing idle connection: %d\n",  next->fd);
+        conn_done(next);
+    }
+}
+
+void update_connlist(Conn *conn)  {
+// 被poll唤醒，更新闲置定时器
+    // 把conn移到链表末尾
+    conn->idle_start =  get_monotonic_usec();
+    // printf("update_connlist: fd=%d, idle_start=%lld\n", conn->fd, conn->idle_start);
+    dlist_detach(&conn->idle_list);
+    dlist_insert_before(&g_data.idle_list,  &conn->idle_list);
+}
+
 
 // --- 服务器主函数 ---
 void RedisServer() {
+    // 初始化定时器链表
+    // g_data.idle_list = DList();
+    dlist_init(&g_data.idle_list);
+    // if(dlist_empty(&g_data.idle_list)){
+    //     printf("dlist_init\n");
+    // }
     // 1. 创建监听 socket
     int lfd = socket(AF_INET, SOCK_STREAM, 0);
     if (lfd < 0) die("socket");
@@ -445,9 +483,14 @@ void RedisServer() {
     // 4. 事件循环
     const int MAX_EVENTS = 1024;
     std::vector<struct epoll_event> events(MAX_EVENTS);
-
+    
     while (true) {
-        int n = epoll_wait(epollfd, events.data(), MAX_EVENTS, -1);
+        // printf("Server running...\n");
+        // 获取下一次轮询的时间间隔
+        int timeout_ms =(int)next_timer_ms();
+        
+        int n = epoll_wait(epollfd, events.data(), MAX_EVENTS, timeout_ms);
+        // int n = epoll_wait(epollfd, events.data(), MAX_EVENTS, -1);
         if (n < 0) {
             if (errno == EINTR) continue;
             die("epoll_wait");
@@ -489,6 +532,7 @@ void RedisServer() {
                     mod_ev.data.ptr = conn;
                     epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &mod_ev);
                 }
+                update_connlist(conn);
             }
 
             // 处理写事件
@@ -498,6 +542,7 @@ void RedisServer() {
                 }
                 keep_conn = process_response(conn, epollfd);
                 // process_response 内部已经处理了切回 REQ 和 epoll MOD
+                update_connlist(conn);
             }
 
             // 处理错误/挂起
@@ -509,6 +554,9 @@ void RedisServer() {
                 close_conn(epollfd, conn);
             }
         }
+
+        //处理定时器
+        process_timers();
     }
 }
 

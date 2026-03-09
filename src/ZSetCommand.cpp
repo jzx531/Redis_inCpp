@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-const size_t k_max_msg = 4096;
+// const size_t k_max_msg = 4096;
 
 static void send_msg(const std::string &msg,uint8_t *res,uint32_t *reslen) {
     int len = msg.size();

@@ -1,7 +1,7 @@
 #include "HashCommand.h"
 #include "Command.h"
 
-const size_t k_max_msg = 4096;
+// const size_t k_max_msg = 4096;
 //通过node查询key和val
 /*
     下面的宏先通过__typeof__(  ((type *)0)->member )  *     mptr =  (ptr)

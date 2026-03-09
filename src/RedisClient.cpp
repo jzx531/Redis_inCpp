@@ -12,7 +12,7 @@
 #include <iostream>
 #include <sstream>
 
-const size_t k_max_msg =  4096;
+// const size_t k_max_msg =  4096;
 
 static int32_t send_req(int fd, const std::vector<std::string>  &cmd)  {
     uint32_t len = 4;

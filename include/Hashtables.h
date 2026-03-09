@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include "RedisServer.h"
+#include "util.h"
 
 
 // 哈希表节点，应该嵌入到有效载荷中
@@ -38,6 +40,11 @@ struct Entry {
 // 键空间的数据结构。
 static struct {
     HMap db;
+
+    // 所有客户端连接的映射，以文件描述符（fd）为键
+    std::vector<Conn *>  fd2conn;
+    // 闲置连接的定时器
+    DList idle_list;
 } g_data;
 
 
