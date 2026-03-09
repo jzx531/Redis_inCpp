@@ -8,7 +8,7 @@
 #include "RedisServer.h"
 #include "util.h"
 #include "Heap.h"
-
+#include "ThreadPool.h"
 
 // 哈希表节点，应该嵌入到有效载荷中
 struct HNode {
@@ -49,6 +49,8 @@ extern struct GlobalData{
 
     // TTL定时器
     std::vector<HeapItem> heap;
+    // 线程池
+    TheadPool tp;
 } g_data;
 
 
@@ -61,6 +63,8 @@ HNode *hm_pop(
     HMap *hmap, HNode * key, bool (*cmp)(HNode *, HNode *));
     
 void hm_clear(HMap *hmap);
+
+size_t hm_size(HMap *hmap);
 
 #endif // HASHTABLES_H
 

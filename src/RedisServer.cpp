@@ -487,6 +487,9 @@ void RedisServer() {
     // if(dlist_empty(&g_data.idle_list)){
     //     printf("dlist_init\n");
     // }
+    
+    //初始化线程池
+    thread_pool_init(&g_data.tp,  4);
     // 1. 创建监听 socket
     int lfd = socket(AF_INET, SOCK_STREAM, 0);
     if (lfd < 0) die("socket");

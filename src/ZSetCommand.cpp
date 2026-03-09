@@ -46,6 +46,7 @@ static void entry_set_ttl(ZSetEntry *ent, int64_t ttl_ms)
     }
 }
 
+/*
 void entry_del(ZSetEntry *ent) {
     if (ent->type == T_ZSET) {
         zset_clear(ent->zset);
@@ -53,7 +54,42 @@ void entry_del(ZSetEntry *ent) {
     //删除Entry时,将可能存在的TTL定时器也删掉
     entry_set_ttl(ent, -1);
     delete ent;
+}*/
+// 使用线程池版本的entry_del
+// 立即释放键
+static void entry_destroy(ZSetEntry *ent)  {
+    switch  (ent->type)  {
+        case  T_ZSET:
+            zset_clear(ent->zset);
+            break;
+    }
+    delete  ent;
 }
+
+static void entry_del_async(void *arg)  {
+    entry_destroy((ZSetEntry * )arg);
+}
+
+// 从键空间分离后释放entry
+void entry_del(ZSetEntry *ent)  {
+    entry_set_ttl(ent,  -1);
+
+    const size_t k_large_container_size =   10000;
+    bool too_big =  false;
+    switch  (ent->type)  {
+        case  T_ZSET:
+            too_big =  hm_size(&ent->zset->hmap)  >  k_large_container_size;
+            break;
+    }
+
+    if  (too_big)  {
+        thread_pool_queue(&g_data.tp,  &entry_del_async,  ent);
+    }  else  {
+        entry_destroy(ent);
+    }
+}
+
+
 
 //比较HNode
 bool zsetentry_eq(HNode *node ,HNode *key)

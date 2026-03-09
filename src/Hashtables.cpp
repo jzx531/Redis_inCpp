@@ -143,7 +143,9 @@ void hm_clear(HMap *hmap) {
 }
         
 
-
+size_t hm_size(HMap *hmap) {
+    return hmap->ht1.size + hmap->ht2.size;
+}
 
 
 
