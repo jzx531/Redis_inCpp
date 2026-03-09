@@ -18,15 +18,45 @@ static ZSetEntry * zsetentry_new(uint32_t type){
     return entry;
 }
 
-static void entry_del(ZSetEntry *ent) {
+static void entry_set_ttl(ZSetEntry *ent, int64_t ttl_ms)
+{
+    if (ttl_ms <= 0 && ent->heap_idx !=(size_t)-1)
+    {
+        //从堆里删除一个元素
+        //用数组里最后一个元素替换它
+        size_t pos = ent->heap_idx;
+        g_data.heap[pos] = g_data.heap.back();
+        g_data.heap.pop_back();
+        if(pos < g_data.heap.size()){
+            heap_update(g_data.heap.data(), pos, g_data.heap.size());
+        }
+        ent->heap_idx = (size_t)-1;
+    }else if(ttl_ms >= 0){
+        size_t pos = ent->heap_idx;
+        if(pos == (size_t)-1){
+            //向堆里添加一个新元素
+            HeapItem item;
+            item.ref = &ent->heap_idx;
+            g_data.heap.push_back(item);
+            pos = g_data.heap.size()-1;
+        }
+        g_data.heap[pos].val = get_monotonic_usec() + (uint64_t)ttl_ms * 1000;
+        heap_update(g_data.heap.data(), pos, g_data.heap.size());
+        printf("g_data.heap.size() = %d\n",g_data.heap.size());
+    }
+}
+
+void entry_del(ZSetEntry *ent) {
     if (ent->type == T_ZSET) {
         zset_clear(ent->zset);
     }
+    //删除Entry时,将可能存在的TTL定时器也删掉
+    entry_set_ttl(ent, -1);
     delete ent;
 }
 
 //比较HNode
-static bool zsetentry_eq(HNode *node ,HNode *key)
+bool zsetentry_eq(HNode *node ,HNode *key)
 {
    struct ZSetEntry *ent = container_of(node, ZSetEntry, node);
    struct LookupKey *lk = container_of(key, LookupKey, node);
@@ -304,3 +334,50 @@ uint32_t do_zquery(
     return ZQUERY_RES;   
 }
 
+uint32_t do_expire(
+    std::vector<std::string>  &cmd, uint8_t * res, uint32_t * reslen)
+{
+    int64_t ttl_ms =  0;
+    if (!str2int(cmd[2], ttl_ms)) {
+        send_msg("Expcet Int", res, reslen);
+        return RES_ERR;
+    }
+    LookupKey key;
+    key.key.swap(cmd[1]);
+    key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
+    HNode *hnode = hm_lookup(&g_data.db, &key.node, &zsetentry_eq);
+    if (!hnode) {
+        send_msg("Not found", res, reslen);
+        return RES_NX;
+    }
+    ZSetEntry *ent = container_of(hnode, ZSetEntry, node);
+    entry_set_ttl(ent, ttl_ms);
+    send_msg("OK", res, reslen);
+    return RES_OK;
+}
+
+uint32_t do_ttl(
+    std::vector<std::string>  &cmd, uint8_t * res, uint32_t * reslen)
+{
+    LookupKey key;
+    key.key.swap(cmd[1]);
+    key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
+    HNode *hnode = hm_lookup(&g_data.db, &key.node, &zsetentry_eq);
+    if (!hnode) {
+        send_msg("-2", res, reslen);
+        return RES_NX;
+    }
+    ZSetEntry *ent = container_of(hnode, ZSetEntry, node);
+    if (ent->heap_idx == -1) {
+        send_msg("-1", res, reslen);
+        return RES_NX;
+    }
+    int64_t ttl_ms = (int64_t)(g_data.heap[ent->heap_idx].val - get_monotonic_usec()) / 1000;
+    if (ttl_ms < 0) {
+        send_msg("-1", res, reslen);
+        return RES_OK;
+    }
+    std::string ttl_str = std::to_string(ttl_ms);
+    send_msg(ttl_str, res, reslen);
+    return RES_OK;
+}

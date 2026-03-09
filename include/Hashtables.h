@@ -7,6 +7,7 @@
 #include <vector>
 #include "RedisServer.h"
 #include "util.h"
+#include "Heap.h"
 
 
 // 哈希表节点，应该嵌入到有效载荷中
@@ -45,6 +46,9 @@ extern struct GlobalData{
     std::vector<Conn *>  fd2conn;
     // 闲置连接的定时器
     DList idle_list;
+
+    // TTL定时器
+    std::vector<HeapItem> heap;
 } g_data;
 
 

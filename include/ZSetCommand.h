@@ -21,6 +21,9 @@ struct  ZSetEntry {
     std::string val;
     uint32_t type =  0;
     ZSet *zset =  NULL;
+
+    //用于TTL
+    size_t heap_idx =  -1;
 };
 
 struct LookupKey {
@@ -52,6 +55,15 @@ uint32_t do_zrem(
 uint32_t do_zquery(
     std::vector<std::string>  &cmd, uint8_t * res, uint32_t * reslen);
 
+        //设置键的生存期
+uint32_t do_expire(
+    std::vector<std::string>  &cmd, uint8_t * res, uint32_t * reslen);
+
+    //查询ttl
+uint32_t do_ttl(
+    std::vector<std::string>  &cmd, uint8_t * res, uint32_t * reslen);
+
+void entry_del(ZSetEntry *ent);
 
 #endif // ZSETCOMMAND_H
 

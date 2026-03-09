@@ -31,7 +31,7 @@ void fd_set_nb(int fd);
 //定时器函数
 uint64_t get_monotonic_usec();
 
-const uint64_t k_idle_timeout_ms =  5 *   1000;
+const uint64_t k_idle_timeout_ms =  50 *   1000;
 
 uint32_t next_timer_ms();
 

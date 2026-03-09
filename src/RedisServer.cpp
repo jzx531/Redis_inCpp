@@ -293,6 +293,11 @@ static int32_t deal_req(
         *rescode = do_zscore(cmd, res, reslen);
     } else if (cmd.size() == 6 && cmd[0] == "zquery") {
         *rescode = do_zquery(cmd, res, reslen);
+    }else if(cmd.size() == 3 && cmd[0] == "expire"){
+        *rescode = do_expire(cmd, res, reslen);
+    }else if (cmd.size()==2 && cmd[0]=="ttl")
+    {
+        *rescode = do_ttl(cmd, res, reslen);
     }
     
     else {
@@ -398,7 +403,16 @@ uint32_t next_timer_ms(){
     Conn *next = container_of(g_data.idle_list.next,  Conn,  idle_list);
 
     uint64_t next_us =  next->idle_start +   k_idle_timeout_ms *   1000;
-    // printf("next_us is %lld\n", next_us);
+    
+    // TTL定时器
+    if  (!g_data.heap.empty()  &&  g_data.heap[0].val <  next_us)  {
+        next_us =  g_data.heap[0].val;//如果有TTL定时器，取其时间最短的
+    }
+
+    if  (next_us ==  (uint64_t)-1)  {
+        return  10000;     // 没有定时器，这个值无所谓
+    }
+
     if  (next_us <=  now_us)  {
         // 超时了？
         return  0;
@@ -414,9 +428,16 @@ static void conn_done(Conn *conn)  {
     free(conn);
 }
 
+bool hnode_same(HNode *node ,HNode *key)
+{
+   struct ZSetEntry *ent = container_of(node, ZSetEntry, node);
+   struct ZSetEntry *lk = container_of(key, ZSetEntry, node);
+   return ent->key == lk->key;
+}
+
 //处理定时器
-void process_timers(int epoll_fd)  {
-    uint64_t now_us =  get_monotonic_usec();
+void process_timers(int epollfd)  {
+    uint64_t now_us =  get_monotonic_usec()+1000;//加1000微秒是考虑到poll()的毫秒精度
     while  (!dlist_empty(&g_data.idle_list))  {
         Conn *next =  container_of(g_data.idle_list.next,  Conn,  idle_list);
         uint64_t next_us =  next->idle_start +   k_idle_timeout_ms *   1000;
@@ -426,7 +447,25 @@ void process_timers(int epoll_fd)  {
         }
 
         printf("removing idle connection: %d\n",  next->fd);
-        close_conn(epoll_fd, next);
+        // conn_done(next);
+        close_conn(epollfd,next);
+    }
+
+    // 处理TTL定时器
+    const size_t k_max_works = 2000;
+    size_t nworks = 0;
+    
+    while(!g_data.heap.empty() && g_data.heap[0].val < now_us){
+        printf("find removing key\n");
+        ZSetEntry * ent = container_of(g_data.heap[0].ref, ZSetEntry, heap_idx);
+        printf("removing key: %s\n", ent->key.c_str());
+        HNode * node = hm_pop(&g_data.db,&ent->node,&hnode_same);
+        assert(node == &ent->node);
+        entry_del(ent);
+        if(nworks++ >= k_max_works){
+            //防止太多键过期，让服务器宕机
+            break;
+        }
     }
 }
 
